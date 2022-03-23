@@ -1,1 +1,1 @@
-# AppDeploy_Azure
+# Deploy Your Application to Azure using GitHub
