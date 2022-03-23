@@ -70,33 +70,25 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     # deploy infrastructure with Azure Bicep
-    - name: Deploy infrastructure
-      id: azure-deployment
-      shell: pwsh
-      run: |
-        $deployment = $(az deployment sub create --name ${{ env.DEV_RG_NAME }} `
-          --location ${{ env.DEV_LOCATION }} `
-          --template-file ./main.bicep `
-          --parameters location=${{ env.DEV_LOCATION }} `
-          --parameters rgName=${{ env.DEV_RG_NAME }} `
-          --parameters webAppName=${{ env.DEV_WEBAPP_NAME}} `
-          --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
-          --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
-          --parameters dockerImage=appdeployazure-ado40:${{ github.sha }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra
-
-    # Push container image to Azure WebApp
-    - name: Setup Container
-      id: container-set
-      shell: pwsh
-      run: |
-        $deployment = $(az webapp config container set  --resource-group ${{ env.DEV_RG_NAME }} `
-          --name ${{ env.DEV_WEBAPP_NAME}} `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-ado40:${{ github.sha }} `
-          --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
-          --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra
+    - name: deploy
+      id: deploy
+      uses: azure/arm-deploy@v1
+      with:
+        resourceGroupName: ${{ secrets.AZURE_RG }}
+        template: ./infra/bicep/main.bicep
+        parameters: \
+            webAppName=${{ secrets.AZURE_APP_NAME }} \
+            location=${{ env.DEV_LOCATION }} ` \
+            rgName=${{ env.DEV_RG_NAME }} ` \
+            webAppName=${{ env.DEV_WEBAPP_NAME}} ` \
+            dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} ` \
+            dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} ` \
+            dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} ` \
+            dockerImage=appdeployazure-ado40:${{ github.sha }} `
+        failOnStdErr: false
+      
+    - name: 'Run Azure webapp deploy action'
+      uses: azure/webapps-deploy@v2
+      with: 
+        app-name: ${{ steps.deploy.outputs.webAppName }} # Replace with your app name
+        package: 'app'
