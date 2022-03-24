@@ -3,16 +3,14 @@ name: Developer Environment Workflow
 on: pull_request
 
 env:
-  PROJECT_NAME: "AppDeploy-Azure"
-
   # The name of the resource group to be created.
-  DEV_RG_NAME: "RG-Dev-${{ env.PROJECT_NAME }}-${{ github.event.pull_request.number}}"
+  DEV_RG_NAME: "RG-Dev-AppDeploy-Azure-${{ github.event.pull_request.number}}"
 
   # The location to store the meta data for the deployment.
   DEV_LOCATION: "westeurope"
 
   # The name of the WebApp
-  DEV_WEBAPP_NAME: "DEV-${{ env.PROJECT_NAME }}-ADO40-${{ github.event.pull_request.number}}"
+  DEV_WEBAPP_NAME: "DEV-AppDeploy-Azure-ADO40-${{ github.event.pull_request.number}}"
 
 jobs:
   buildImage:
@@ -45,7 +43,6 @@ jobs:
       with:
         push: true
         tags: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-ado40:${{ github.sha }}
-        context: .
 
   deploy_container:
 
@@ -85,7 +82,7 @@ jobs:
           --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
           --parameters dockerImage=appdeployazure-ado40:${{ github.sha }} `
           --output json) | ConvertFrom-Json
-      working-directory: ./infra
+      working-directory: ./infra/bicep
 
     # Push container image to Azure WebApp
     - name: Setup Container
@@ -99,4 +96,4 @@ jobs:
           --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
           --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
           --output json) | ConvertFrom-Json
-      working-directory: ./infra
+      working-directory: ./infra/bicep
