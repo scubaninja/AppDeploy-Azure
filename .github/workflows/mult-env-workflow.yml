@@ -53,7 +53,7 @@ jobs:
 
     runs-on: ubuntu-latest
     name: Create and Deploy Container to Azure
-    needs: buildImage
+    needs: deploy_container
 
     env:
       url: https://${{ secrets.DEV_WEBAPP_NAME}}.azurewebsites.net
