@@ -7,16 +7,6 @@ on:
     branches: 
       - main
 
-env:
-  # The name of the resource group to be created.
-  RG_NAME: "RG-AppDeploy-Azure-${{ github.event.pull_request.number}}"
-
-  # The location to store the meta data for the deployment.
-  LOCATION: "westeurope"
-
-  # The name of the WebApp
-  WEBAPP_NAME: "AppDeploy-Azure-${{ github.event.pull_request.number}}"
-
 jobs:
   buildImage:
     name: Build and Push Docker Image
@@ -58,7 +48,7 @@ jobs:
     # declare GitHub Environment
     environment:
       name: Dev
-      url: https://${{ env.DEV_WEBAPP_NAME}}.azurewebsites.net
+      url: https://${{ secrets.DEV_WEBAPP_NAME}}.azurewebsites.net
 
     steps:
     # checkout code
@@ -76,12 +66,12 @@ jobs:
       id: azure-deployment
       shell: pwsh
       run: |
-        $deployment = $(az deployment sub create --name ${{ env.DEV_RG_NAME }} `
-          --location ${{ env.DEV_LOCATION }} `
+        $deployment = $(az deployment sub create --name ${{ secrets.DEV_RG_NAME }} `
+          --location ${{ secrets.DEV_LOCATION }} `
           --template-file ./main.bicep `
-          --parameters location=${{ env.DEV_LOCATION }} `
-          --parameters rgName=${{ env.DEV_RG_NAME }} `
-          --parameters webAppName=${{ env.DEV_WEBAPP_NAME}} `
+          --parameters location=${{ secrets.DEV_LOCATION }} `
+          --parameters rgName=${{ secrets.DEV_RG_NAME }} `
+          --parameters webAppName=${{ secrets.DEV_WEBAPP_NAME}} `
           --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
           --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
           --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
@@ -94,8 +84,8 @@ jobs:
       id: container-set
       shell: pwsh
       run: |
-        $deployment = $(az webapp config container set  --resource-group ${{ env.DEV_RG_NAME }} `
-          --name ${{ env.DEV_WEBAPP_NAME}} `
+        $deployment = $(az webapp config container set  --resource-group ${{ secrets.DEV_RG_NAME }} `
+          --name ${{ secrets.DEV_WEBAPP_NAME}} `
           --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} `
           --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
           --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
