@@ -7,6 +7,16 @@ on:
     branches: 
       - main
 
+env:
+  # The name of the resource group to be created.
+  DEV_RG_NAME: "RG-Dev-AppDeploy-Azure-${{ github.event.pull_request.number}}"
+
+  # The location to store the meta data for the deployment.
+  DEV_LOCATION: "westeurope"
+
+  # The name of the WebApp
+  DEV_WEBAPP_NAME: "DEV-AppDeploy-Azure-${{ github.event.pull_request.number}}"
+
 jobs:
   buildImage:
     name: Build and Push Docker Image
@@ -48,7 +58,7 @@ jobs:
     # declare GitHub Environment
     environment:
       name: Dev
-      url: https://${{ secrets.DEV_WEBAPP_NAME}}.azurewebsites.net
+      url: https://${{ env.DEV_WEBAPP_NAME}}.azurewebsites.net
 
     steps:
     # checkout code
