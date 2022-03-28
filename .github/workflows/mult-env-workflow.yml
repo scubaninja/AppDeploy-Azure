@@ -149,7 +149,7 @@ jobs:
       id: azure-deployment
       shell: pwsh
       run: |
-        $deployment = $(az deployment sub create --name ${{ secrets.TEST_DEV_RG_NAME }} `
+        $deployment = $(az deployment sub create --name ${{ secrets.TEST_RG_NAME }} `
           --location ${{ secrets.TEST_LOCATION }} `
           --template-file ./main.bicep `
           --parameters location=${{ secrets.TEST_LOCATION }} `
