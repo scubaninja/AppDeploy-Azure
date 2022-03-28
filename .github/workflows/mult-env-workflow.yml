@@ -107,20 +107,20 @@ jobs:
     
     # TODO - CD
     # Enabling CI/CD Scanning
-    - uses: Azure/container-scan@v0 
-      name: Scan image for vulnerabilities
-      id: container-scan
-      continue-on-error: true
-      with:
-        image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} 
+    # - uses: Azure/container-scan@v0 
+    #   name: Scan image for vulnerabilities
+    #   id: container-scan
+    #   continue-on-error: true
+    #   with:
+    #     image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} 
 
     # Post Logs to AppInsights
-    - name: Post logs to appinsights
-      uses: Azure/publish-security-assessments@v0
-      with: 
-        scan-results-path: ${{ steps.container-scan.outputs.scan-report-path }}
-        connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
-        subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }} 
+    # - name: Post logs to appinsights
+    #   uses: Azure/publish-security-assessments@v0
+    #   with: 
+    #     scan-results-path: ${{ steps.container-scan.outputs.scan-report-path }}
+    #     connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
+    #     subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }} 
    
   deploy_dev:
         
