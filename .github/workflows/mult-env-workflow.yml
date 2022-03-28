@@ -256,9 +256,9 @@ jobs:
       shell: pwsh
       run: |
         $deployment = $(az deployment sub create --name ${{ secrets.PROD_RG_NAME }} `
-          --location ${{ secrets.LOCATION }} `
+          --location ${{ secrets.PROD_LOCATION }} `
           --template-file ./main.bicep `
-          --parameters location=${{ secrets.LOCATION }} `
+          --parameters location=${{ secrets.PROD_LOCATION }} `
           --parameters rgName=${{ secrets.PROD_RG_NAME }} `
           --parameters webAppName=${{ secrets.PROD_WEBAPP_NAME}} `
           --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
