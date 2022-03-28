@@ -55,10 +55,12 @@ jobs:
     name: Create and Deploy Container to Azure
     needs: buildImage
 
-    # declare GitHub Environment
+    env:
+      url: https://${{ secrets.DEV_WEBAPP_NAME}}.azurewebsites.net
+    
     environment:
       name: Dev
-      url: https://${{ env.DEV_WEBAPP_NAME}}.azurewebsites.net
+      url: ${{ env.url }}
 
     steps:
     # checkout code
