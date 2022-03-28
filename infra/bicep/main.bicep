@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param location string = 'centralus'
+param location string = 'westeurope'
 param rgName string = 'RG-Example'
 param webAppName string = 'mywebapp'
 param appServicePlanTier string = 'Standard'

@@ -1,5 +1,5 @@
 param webAppName string = 'mywebapp'
-param location string = 'centralus'
+param location string = 'westeurope'
 param appServicePlanTier string = 'Standard'
 param appServicePlanSku string = 'S1'
 param dockerRegistryHost string = 'yourregistry.azurecr.io'
