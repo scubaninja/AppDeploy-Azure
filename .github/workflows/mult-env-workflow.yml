@@ -115,13 +115,13 @@ jobs:
         connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
         subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }} 
    
-  deploy_test:
+  deploy_dev:
         
     runs-on: ubuntu-latest
-    name: Deploy to Test
+    name: Deploy to Dev
     needs: buildImage
 
-    # declare GitHub Environment - test
+    # declare GitHub Environment - dev
     environment:
       name: test
       url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
@@ -151,9 +151,9 @@ jobs:
           --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
           --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
           --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
-          --parameters dockerImage=tailwindtraders-ado40:${{ github.sha }} `
+          --parameters dockerImage=${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} `
           --output json) | ConvertFrom-Json
-      working-directory: ./TailwindTraders.Website/Deploy/IaC
+      working-directory: ./infra/bicep
 
     # Push container image to Azure WebApp
     - name: Setup Container
@@ -162,12 +162,12 @@ jobs:
       run: |
         $deployment = $(az webapp config container set  --resource-group ${{ secrets.RG_NAME }} `
           --name ${{ secrets.WEBAPP_NAME}} `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/tailwindtraders-ado40:${{ github.sha }} `
+          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} `
           --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
           --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
           --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
           --output json) | ConvertFrom-Json
-      working-directory: ./TailwindTraders.Website/Deploy/IaC
+      working-directory: ./infra/bicep
 
     # Get the URL for the Azure WebApp
     - name: Get the Webapp URL
@@ -180,14 +180,14 @@ jobs:
           --output json) | ConvertFrom-Json
         Write-Output "The webapp URL is https://$($appurl.name)"
         Write-Output "::set-output name=webAppUrl::https://$($appurl.name)"
-      working-directory: ./TailwindTraders.Website/Deploy/IaC
+      working-directory: ./infra/bicep
 
 
   deploy_staging:
         
     runs-on: ubuntu-latest
     name: Deploy to Staging
-    needs: deploy_test
+    needs: deploy_dev
 
     # declare GitHub Environment - Staging
     environment:
@@ -213,12 +213,12 @@ jobs:
         $deployment = $(az webapp config container set  --resource-group ${{ secrets.RG_NAME }} `
           --name ${{ secrets.WEBAPP_NAME}} `
           --slot staging `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/tailwindtraders-ado40:${{ github.sha }} `
+          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} `
           --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
           --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
           --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
           --output json) | ConvertFrom-Json
-      working-directory: ./TailwindTraders.Website/Deploy/IaC
+      working-directory: ./infra/bicep
 
     
   deploy_production:
@@ -257,9 +257,9 @@ jobs:
           --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
           --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
           --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
-          --parameters dockerImage=tailwindtraders-ado40:${{ github.sha }} `
+          --parameters dockerImage=${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} `
           --output json) | ConvertFrom-Json
-      working-directory: ./TailwindTraders.Website/Deploy/IaC
+      working-directory: ./infra/bicep
 
     # Push container image to Azure WebApp
     - name: Setup Container
@@ -268,12 +268,12 @@ jobs:
       run: |
         $deployment = $(az webapp config container set  --resource-group ${{ secrets.RG_NAME }} `
           --name ${{ secrets.WEBAPP_NAME}} `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/tailwindtraders-ado40:${{ github.sha }} `
+          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} `
           --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
           --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
           --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
           --output json) | ConvertFrom-Json
-      working-directory: ./TailwindTraders.Website/Deploy/IaC
+      working-directory: ./infra/bicep
 
     # Get the URL for the Azure WebApp
     - name: Get the Webapp URL
@@ -286,4 +286,4 @@ jobs:
           --output json) | ConvertFrom-Json
         Write-Output "The webapp URL is https://$($appurl.name)"
         Write-Output "::set-output name=webAppUrl::https://$($appurl.name)"
-      working-directory: ./TailwindTraders.Website/Deploy/IaC
+      working-directory: ./infra/bicep
