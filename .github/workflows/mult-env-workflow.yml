@@ -2,6 +2,11 @@ name: Multiple Environment Workflow
 
 on: pull_request
 
+on:
+  push:
+    branches: 
+      - main
+
 env:
   # The name of the resource group to be created.
   RG_NAME: "RG-AppDeploy-Azure-${{ github.event.pull_request.number}}"
