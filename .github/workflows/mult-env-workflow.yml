@@ -4,13 +4,13 @@ on: pull_request
 
 env:
   # The name of the resource group to be created.
-  DEV_RG_NAME: "RG-Dev-AppDeploy-Azure-${{ github.event.pull_request.number}}"
+  RG_NAME: "RG-AppDeploy-Azure-${{ github.event.pull_request.number}}"
 
   # The location to store the meta data for the deployment.
-  DEV_LOCATION: "westeurope"
+  LOCATION: "westeurope"
 
   # The name of the WebApp
-  DEV_WEBAPP_NAME: "DEV-AppDeploy-Azure-${{ github.event.pull_request.number}}"
+  WEBAPP_NAME: "AppDeploy-Azure-${{ github.event.pull_request.number}}"
 
 jobs:
   buildImage:
