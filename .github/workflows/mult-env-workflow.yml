@@ -87,7 +87,7 @@ jobs:
           --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
           --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
           --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
-          --parameters dockerImage=appdeployazure-:${{ github.sha }} `
+          --parameters dockerImage=appdeployazure:${{ github.sha }} `
           --output json) | ConvertFrom-Json
       working-directory: ./infra/bicep
 
@@ -98,7 +98,7 @@ jobs:
       run: |
         $deployment = $(az webapp config container set  --resource-group ${{ secrets.DEV_RG_NAME }} `
           --name ${{ secrets.DEV_WEBAPP_NAME}} `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} `
+          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
           --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
           --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
           --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
