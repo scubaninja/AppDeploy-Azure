@@ -112,7 +112,7 @@ jobs:
       id: container-scan
       continue-on-error: true
       with:
-        image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} 
+        image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} 
 
     # Post Logs to AppInsights
     - name: Post logs to appinsights
