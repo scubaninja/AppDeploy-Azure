@@ -93,7 +93,7 @@ jobs:
           --location ${{ secrets.DEV_LOCATION }} `
           --template-file ./main.bicep `
           --parameters location=${{ secrets.DEV_LOCATION }} `
-          --parameters rgName=${{ secrets.DEV_RG_NAME }}:${{ github.event.pull_request.number}} `
+          --parameters rgName=${{ secrets.DEV_RG_NAME }} `
           --parameters webAppName=${{ secrets.DEV_WEBAPP_NAME}}:${{ github.event.pull_request.number}} `
           --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
           --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
@@ -107,8 +107,8 @@ jobs:
       id: container-set
       shell: pwsh
       run: |
-        $deployment = $(az webapp config container set  --resource-group ${{ secrets.DEV_RG_NAME }}:${{ github.event.pull_request.number}}" `
-          --name ${{ secrets.DEV_WEBAPP_NAME}} `
+        $deployment = $(az webapp config container set  --resource-group ${{ secrets.DEV_RG_NAME }} `
+          --name ${{ secrets.DEV_WEBAPP_NAME}}:${{ github.event.pull_request.number}} `
           --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
           --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
           --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
