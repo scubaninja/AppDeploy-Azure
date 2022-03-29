@@ -1,4 +1,4 @@
-name: Multiple Environment Workflow
+name: CI/CD Using Multiple Environments
 
 # on: pull_request
 
