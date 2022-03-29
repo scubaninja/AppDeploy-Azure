@@ -121,23 +121,7 @@ jobs:
           --output json) | ConvertFrom-Json
       working-directory: ./infra/bicep
     
-    # TODO - CD
-    # Enabling CI/CD Scanning
-    # - uses: Azure/container-scan@v0 
-    #   name: Scan image for vulnerabilities
-    #   id: container-scan
-    #   continue-on-error: true
-    #   with:
-    #     image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure-:${{ github.sha }} 
-
-    # Post Logs to AppInsights
-    # - name: Post logs to appinsights
-    #   uses: Azure/publish-security-assessments@v0
-    #   with: 
-    #     scan-results-path: ${{ steps.container-scan.outputs.scan-report-path }}
-    #     connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
-    #     subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }} 
-   
+ 
   deploy_test:
         
     runs-on: ubuntu-latest
@@ -227,6 +211,24 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # deploy infrastructure with Azure Bicep
+    - name: Deploy infrastructure
+      id: azure-deployment
+      shell: pwsh
+      run: |
+        $deployment = $(az deployment sub create --name ${{ secrets.STAGING_RG_NAME }} `
+          --location ${{ secrets.STAGING_LOCATION }} `
+          --template-file ./main.bicep `
+          --parameters location=${{ secrets.STAGING_LOCATION }} `
+          --parameters rgName=${{ secrets.STAGING_RG_NAME }} `
+          --parameters webAppName=${{ secrets.STAGING_WEBAPP_NAME}} `
+          --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
+          --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
+          --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
+          --parameters dockerImage=${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
+          --output json) | ConvertFrom-Json
+      working-directory: ./infra/bicep
 
     # Push container image to Azure WebApp
     - name: Setup Container
