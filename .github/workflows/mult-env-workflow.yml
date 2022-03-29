@@ -219,7 +219,6 @@ jobs:
       run: |
         $deployment = $(az webapp config container set  --resource-group ${{ secrets.STAGING_RG_NAME }} `
           --name ${{ secrets.STAGING_WEBAPP_NAME}} `
-          --slot staging `
           --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
           --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
           --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
