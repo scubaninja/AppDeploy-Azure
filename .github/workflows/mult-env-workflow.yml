@@ -49,6 +49,22 @@ jobs:
         push: true
         tags: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }}
 
+    # Scanning Images using Microsoft Defender
+    - uses: Azure/container-scan@v0 
+      name: Scan image for vulnerabilities
+      id: container-scan
+      continue-on-error: true
+      with:
+        image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} 
+
+    # Sending logs to AppInsights
+    - name: Post logs to appinsights
+      uses: Azure/publish-security-assessments@v0
+      with: 
+        scan-results-path: ${{ steps.container-scan.outputs.scan-report-path }}
+        connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
+        subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }}
+
   deploy_container:
 
     runs-on: ubuntu-latest
