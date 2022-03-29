@@ -128,7 +128,7 @@ jobs:
     name: Deploy to Test
     needs: deploy_container
 
-    # declare GitHub Environment - test
+    # output URL from deployment
     environment:
       name: test
       url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
@@ -196,7 +196,7 @@ jobs:
     name: Deploy to Staging
     needs: deploy_test
 
-    # declare GitHub Environment - Staging
+    # output URL from  deployment
     environment:
       name: staging
       url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
@@ -233,7 +233,7 @@ jobs:
     name: Deploy to Production
     needs: deploy_staging
 
-    # declare GitHub Environment - Production
+    # output URL from env deployment
     environment:
       name: Production
       url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
