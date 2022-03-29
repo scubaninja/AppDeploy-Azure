@@ -5,7 +5,7 @@ on:
     types: [ closed ]
 
 env: 
-  DEV_RG_NAME: "RG-Dev-TailwindTraders-${{ github.event.pull_request.number }}"
+  DEV_RG_NAME: "RG-Dev-AppDeploy-Azure-${{ github.event.pull_request.number}}"
 
 jobs:
   deleteAZResourceGroup:
