@@ -244,6 +244,19 @@ jobs:
           --output json) | ConvertFrom-Json
       working-directory: ./infra/bicep
 
+    # Get the URL for the Azure WebApp
+    - name: Get the Webapp URL
+      id: get-webapp-url
+      shell: pwsh
+      run: |
+        $appurl = $(az webapp config hostname list `
+          --resource-group ${{ secrets.STAGING_RG_NAME }} `
+          --webapp-name ${{ secrets.STAGING_WEBAPP_NAME }} `
+          --output json) | ConvertFrom-Json
+        Write-Output "The webapp URL is https://$($appurl.name)"
+        Write-Output "::set-output name=webAppUrl::https://$($appurl.name)"
+      working-directory: ./infra/bicep
+
     
   deploy_production:
         
