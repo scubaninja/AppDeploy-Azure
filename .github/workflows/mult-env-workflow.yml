@@ -147,15 +147,15 @@ jobs:
     - name: 'Azure Load Testing'
       uses: azure/load-testing@v1
       with:
-          loadTestConfigFile: 'SampleApp.yaml'
-          loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
-          resourceGroup: ${{ secrets.RG_NAME }}
-          env: |
+        loadTestConfigFile: 'SampleApp.yaml'
+        loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
+        resourceGroup: ${{ secrets.RG_NAME }}
+        env: |
           [
-              {
-              "name": "${{ secrets.WEBAPP_NAME }}",
-              "value": "${{ secrets.WEBAPP_NAME }}.azurewebsites.net"
-              }
+            {
+            "name": "${{ secrets.WEBAPP_NAME }}",
+            "value": "${{ secrets.WEBAPP_NAME }}.azurewebsites.net"
+            }
           ]
 
     - uses: actions/upload-artifact@v2
