@@ -125,51 +125,43 @@ jobs:
       name: QA
       url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
  
-     steps:
-      # checkout code
-      - name: checkout branch
-        uses: actions/checkout@v2
+    steps:
+    # checkout code
+    - name: checkout branch
+      uses: actions/checkout@v2
 
-      # log into Azure
-      - name: "Login via Azure CLI"
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    # log into Azure
+    - name: "Login via Azure CLI"
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # - name: Create Resource Group
-      #   uses: azure/powershell@v1
-      #   continue-on-error: false
-      #   with:
-      #     inlineScript: |
-      #       az group create --name "${{ secrets.RG_NAME }}" --location "${{ secrets.LOCATION }}"
-      #     azPSVersion: "latest"      
+    - name: Create Azure Load Testing resource
+      uses: azure/arm-deploy@v1
+      with:
+        resourceGroupName: ${{ secrets.RG_NAME }}
+        template: ./infra/arm/template.json
+        parameters: ./infra/arm/parameters.json name=${{ env.LOAD_TEST_RESOURCE }} location="${{ secrets.LOCATION }}"
 
-      - name: Create Azure Load Testing resource
-        uses: azure/arm-deploy@v1
-        with:
-          resourceGroupName: ${{ secrets.RG_NAME }}
-          template: ./infra/arm/template.json
-          parameters: ./infra/arm/parameters.json name=${{ env.LOAD_TEST_RESOURCE }} location="${{ secrets.LOCATION }}"
+    # load test qa
+    - name: 'Azure Load Testing'
+      uses: azure/load-testing@v1
+      with:
+          loadTestConfigFile: 'SampleApp.yaml'
+          loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
+          resourceGroup: ${{ secrets.RG_NAME }}
+          env: |
+          [
+              {
+              "name": "${{ secrets.WEBAPP_NAME }}",
+              "value": "${{ secrets.WEBAPP_NAME }}.azurewebsites.net"
+              }
+          ]
 
-      # load test qa
-      - name: 'Azure Load Testing'
-        uses: azure/load-testing@v1
-        with:
-            loadTestConfigFile: 'SampleApp.yaml'
-            loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
-            resourceGroup: ${{ secrets.RG_NAME }}
-            env: |
-            [
-                {
-                "name": "${{ secrets.WEBAPP_NAME }}",
-                "value": "${{ secrets.WEBAPP_NAME }}.azurewebsites.net"
-                }
-            ]
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: loadTestResults
-          path: ${{ github.workspace }}/loadTest
+    - uses: actions/upload-artifact@v2
+      with:
+        name: loadTestResults
+        path: ${{ github.workspace }}/loadTest
 
   deploy_staging:
         
