@@ -7,7 +7,7 @@ permissions:
       contents: read
 
 env:
-  LOAD_TEST_RESOURCE: "SampleApp.jmx"
+  LOAD_TEST_RESOURCE: "SampleApp"
 
 jobs:
 
