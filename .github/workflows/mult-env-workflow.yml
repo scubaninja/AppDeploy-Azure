@@ -7,7 +7,7 @@ permissions:
       contents: read
 
 env:
-  LOAD_TEST_RESOURCE: "my-jmeter-script.jmx"
+  LOAD_TEST_RESOURCE: "SampleApp.jmx"
 
 jobs:
 
@@ -60,164 +60,164 @@ jobs:
         name: loadTestResults
         path: ${{ github.workspace }}/loadTest
 
-  buildImage:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
+  # buildImage:
+  #   name: Build and Push Docker Image
+  #   runs-on: ubuntu-latest
 
-    steps:
-    # checkout code
-    - name: checkout branch
-      uses: actions/checkout@v2
+  #   steps:
+  #   # checkout code
+  #   - name: checkout branch
+  #     uses: actions/checkout@v2
 
-    # log into Azure
-    - name: "Login via Azure CLI"
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+  #   # log into Azure
+  #   - name: "Login via Azure CLI"
+  #     uses: azure/login@v1
+  #     with:
+  #       creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # authenticate into Docker
-    - name: "docker login"
-      uses: azure/docker-login@v1
-      with:
-        login-server: ${{ secrets.DOCKER_LOGIN_SERVER }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+  #   # authenticate into Docker
+  #   - name: "docker login"
+  #     uses: azure/docker-login@v1
+  #     with:
+  #       login-server: ${{ secrets.DOCKER_LOGIN_SERVER }}
+  #       username: ${{ secrets.DOCKER_USERNAME }}
+  #       password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Build and push Docker image
-    - name: Build and push
-      id: docker_build
-      uses: docker/build-push-action@v2
-      with:
-        push: true
-        tags: ${{ secrets.DOCKER_LOGIN_SERVER }}/maxtest1webapp:${{ github.sha }}
+  #   # Build and push Docker image
+  #   - name: Build and push
+  #     id: docker_build
+  #     uses: docker/build-push-action@v2
+  #     with:
+  #       push: true
+  #       tags: ${{ secrets.DOCKER_LOGIN_SERVER }}/maxtest1webapp:${{ github.sha }}
 
-    # Scanning Images using Microsoft Defender
-    - uses: Azure/container-scan@v0 
-      name: Scan image for vulnerabilities
-      id: container-scan
-      continue-on-error: true
-      with:
-        image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/maxtest1webapp:${{ github.sha }} 
+  #   # Scanning Images using Microsoft Defender
+  #   - uses: Azure/container-scan@v0 
+  #     name: Scan image for vulnerabilities
+  #     id: container-scan
+  #     continue-on-error: true
+  #     with:
+  #       image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/maxtest1webapp:${{ github.sha }} 
 
-    # Sending logs to AppInsights
-    # - name: Post logs to appinsights
-    #   uses: Azure/publish-security-assessments@v0
-    #   with: 
-    #     scan-results-path: ${{ steps.container-scan.outputs.scan-report-path }}
-    #     connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
-    #     subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }}
+  #   # Sending logs to AppInsights
+  #   # - name: Post logs to appinsights
+  #   #   uses: Azure/publish-security-assessments@v0
+  #   #   with: 
+  #   #     scan-results-path: ${{ steps.container-scan.outputs.scan-report-path }}
+  #   #     connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
+  #   #     subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }}
 
-  deploy_dev:
+  # deploy_dev:
 
-    runs-on: ubuntu-latest
-    name: Deploy to Dev
-    needs: buildImage
+  #   runs-on: ubuntu-latest
+  #   name: Deploy to Dev
+  #   needs: buildImage
 
-    environment:
-      name: Dev
-      url: ${{ steps.get-webapp-url.outputs.webAppUrl }}
+  #   environment:
+  #     name: Dev
+  #     url: ${{ steps.get-webapp-url.outputs.webAppUrl }}
 
-    steps:
-    # checkout code
-    - name: checkout branch
-      uses: actions/checkout@v2
+  #   steps:
+  #   # checkout code
+  #   - name: checkout branch
+  #     uses: actions/checkout@v2
 
-    - name: Deploy app
-      uses: automagicallyorg/action-azure-deploy@main
-      with:
-        azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
-        azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
-        azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        azureLocation: ${{ secrets.LOCATION }}
-        azureResourceGroupName: ${{ secrets.RG_NAME }}
-        azureWebappName:  ${{ secrets.WEBAPP_NAME }}
-        dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
-        dockerUsername: ${{ secrets.DOCKER_USERNAME }}
-        dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
+  #   - name: Deploy app
+  #     uses: automagicallyorg/action-azure-deploy@main
+  #     with:
+  #       azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
+  #       azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
+  #       azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  #       azureLocation: ${{ secrets.LOCATION }}
+  #       azureResourceGroupName: ${{ secrets.RG_NAME }}
+  #       azureWebappName:  ${{ secrets.WEBAPP_NAME }}
+  #       dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
+  #       dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+  #       dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
  
-  deploy_qa:
+  # deploy_qa:
         
-    runs-on: ubuntu-latest
-    name: Deploy to QA
-    needs: deploy_dev
+  #   runs-on: ubuntu-latest
+  #   name: Deploy to QA
+  #   needs: deploy_dev
 
-    # output URL from deployment
-    environment:
-      name: QA
-      url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
+  #   # output URL from deployment
+  #   environment:
+  #     name: QA
+  #     url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
  
-    steps:
-    # checkout code
-    - name: checkout branch
-      uses: actions/checkout@v2
+  #   steps:
+  #   # checkout code
+  #   - name: checkout branch
+  #     uses: actions/checkout@v2
 
-    - name: Deploy app
-      uses: automagicallyorg/action-azure-deploy@main
-      with:
-        azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
-        azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
-        azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        azureLocation: ${{ secrets.LOCATION }}
-        azureResourceGroupName: ${{ secrets.RG_NAME }}
-        azureWebappName:  ${{ secrets.WEBAPP_NAME }}
-        dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
-        dockerUsername: ${{ secrets.DOCKER_USERNAME }}
-        dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
+  #   - name: Deploy app
+  #     uses: automagicallyorg/action-azure-deploy@main
+  #     with:
+  #       azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
+  #       azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
+  #       azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  #       azureLocation: ${{ secrets.LOCATION }}
+  #       azureResourceGroupName: ${{ secrets.RG_NAME }}
+  #       azureWebappName:  ${{ secrets.WEBAPP_NAME }}
+  #       dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
+  #       dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+  #       dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
 
-  deploy_staging:
+  # deploy_staging:
         
-    runs-on: ubuntu-latest
-    name: Deploy to Staging
-    needs: loadtest_qa
+  #   runs-on: ubuntu-latest
+  #   name: Deploy to Staging
+  #   needs: loadtest_qa
 
-    # output URL from  deployment
-    environment:
-      name: Staging
-      url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
+  #   # output URL from  deployment
+  #   environment:
+  #     name: Staging
+  #     url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
  
-    steps:
-    # checkout code
-    - name: checkout branch
-      uses: actions/checkout@v2
+  #   steps:
+  #   # checkout code
+  #   - name: checkout branch
+  #     uses: actions/checkout@v2
     
-    - name: Deploy app
-      uses: automagicallyorg/action-azure-deploy@main
-      with:
-        azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
-        azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
-        azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        azureLocation: ${{ secrets.LOCATION }}
-        azureResourceGroupName: ${{ secrets.RG_NAME }}
-        azureWebappName:  ${{ secrets.WEBAPP_NAME }}
-        dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
-        dockerUsername: ${{ secrets.DOCKER_USERNAME }}
-        dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
+  #   - name: Deploy app
+  #     uses: automagicallyorg/action-azure-deploy@main
+  #     with:
+  #       azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
+  #       azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
+  #       azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  #       azureLocation: ${{ secrets.LOCATION }}
+  #       azureResourceGroupName: ${{ secrets.RG_NAME }}
+  #       azureWebappName:  ${{ secrets.WEBAPP_NAME }}
+  #       dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
+  #       dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+  #       dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
 
-  deploy_production:
+  # deploy_production:
         
-    runs-on: ubuntu-latest
-    name: Deploy to Production
-    needs: deploy_staging
+  #   runs-on: ubuntu-latest
+  #   name: Deploy to Production
+  #   needs: deploy_staging
 
-    # output URL from env deployment
-    environment:
-      name: Production
-      url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
+  #   # output URL from env deployment
+  #   environment:
+  #     name: Production
+  #     url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
  
-    steps:
-    # checkout code
-    - name: checkout branch
-      uses: actions/checkout@v2
+  #   steps:
+  #   # checkout code
+  #   - name: checkout branch
+  #     uses: actions/checkout@v2
 
-    - name: Deploy app
-      uses: automagicallyorg/action-azure-deploy@main
-      with:
-        azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
-        azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
-        azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        azureLocation: ${{ secrets.LOCATION }}
-        azureResourceGroupName: ${{ secrets.RG_NAME }}
-        azureWebappName:  ${{ secrets.WEBAPP_NAME }}
-        dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
-        dockerUsername: ${{ secrets.DOCKER_USERNAME }}
-        dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
+  #   - name: Deploy app
+  #     uses: automagicallyorg/action-azure-deploy@main
+  #     with:
+  #       azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
+  #       azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
+  #       azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  #       azureLocation: ${{ secrets.LOCATION }}
+  #       azureResourceGroupName: ${{ secrets.RG_NAME }}
+  #       azureWebappName:  ${{ secrets.WEBAPP_NAME }}
+  #       dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
+  #       dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+  #       dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
