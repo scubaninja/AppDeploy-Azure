@@ -143,7 +143,7 @@ jobs:
         template: ./infra/arm/template.json
         parameters: ./infra/arm/parameters.json name=${{ env.LOAD_TEST_RESOURCE }} location="${{ secrets.LOCATION }}"
 
-    # load test qa
+    # load test
     - name: 'Azure Load Testing'
       uses: azure/load-testing@v1
       with:
