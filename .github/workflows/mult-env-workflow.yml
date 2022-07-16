@@ -168,7 +168,7 @@ jobs:
         
     runs-on: ubuntu-latest
     name: Deploy to Staging
-    needs: loadtest_qa
+    needs: deploy_qa
 
     # output URL from  deployment
     environment:
