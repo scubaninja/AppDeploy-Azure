@@ -6,7 +6,11 @@ permissions:
       id-token: write
       contents: read
 
+env:
+  LOAD_TEST_RESOURCE: "SampleApp"
+
 jobs:
+
   buildImage:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
@@ -110,6 +114,55 @@ jobs:
         dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
         dockerUsername: ${{ secrets.DOCKER_USERNAME }}
         dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
+
+  loadtest_qa:
+        
+    runs-on: ubuntu-latest
+    name: Load test QA
+    needs: deploy_dev
+
+    # output URL from deployment
+    environment:
+      name: QA
+      url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
+ 
+    steps:
+    # checkout code
+    - name: checkout branch
+      uses: actions/checkout@v2
+
+    # log into Azure
+    - name: "Login via Azure CLI"
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Create Azure Load Testing resource
+      uses: azure/arm-deploy@v1
+      with:
+        resourceGroupName: ${{ secrets.RG_NAME }}
+        template: ./infra/arm/template.json
+        parameters: ./infra/arm/parameters.json name=${{ env.LOAD_TEST_RESOURCE }} location="${{ secrets.LOCATION }}"
+
+    # load test
+    - name: 'Azure Load Testing'
+      uses: azure/load-testing@v1
+      with:
+        loadTestConfigFile: 'SampleApp.yaml'
+        loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
+        resourceGroup: ${{ secrets.RG_NAME }}
+        env: |
+          [
+            {
+            "name": "${{ secrets.WEBAPP_NAME }}",
+            "value": "${{ secrets.WEBAPP_NAME }}.azurewebsites.net"
+            }
+          ]
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: loadTestResults
+        path: ${{ github.workspace }}/loadTest
 
   deploy_staging:
         
