@@ -4,12 +4,9 @@ on:
   pull_request:
     types: [ closed ]
 
-env: 
-  DEV_RG_NAME: "RG-Dev-AppDeploy-Azure-${{ github.event.pull_request.number}}"
-
 jobs:
   deleteAZResourceGroup:
-    name: Delete Azure Resource Group
+    name: Delete Dev esource Group
     runs-on: ubuntu-latest
      
     environment:
@@ -29,9 +26,9 @@ jobs:
       with:
         inlineScript: |
           #!/bin/bash
-          if $(az group exists --name ${{ env.DEV_RG_NAME }}) ; then
+          if $(az group exists --name ${{ secrets.RG_NAME }}) ; then
             echo "Deleting Azure resource group..."
-            az group delete --name ${{ env.DEV_RG_NAME }} -y
+            az group delete --name ${{ secrets.RG_NAME }} -y
             echo "Azure resource group deleted"
           else            
             echo "Azure resource group doesn't exist, skipping deletion"

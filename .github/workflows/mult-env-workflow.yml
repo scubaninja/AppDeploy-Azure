@@ -2,17 +2,15 @@ name: Multiple Environment Workflow
 
 on: pull_request
 
+permissions:
+      id-token: write
+      contents: read
+
 env:
-  # The name of the resource group to be created.
-  DEV_RG_NAME: "RG-Dev-AppDeploy-Azure-${{ github.event.pull_request.number}}"
-
-  # The location to store the meta data for the deployment.
-  DEV_LOCATION: "westeurope"
-
-  # The name of the WebApp
-  DEV_WEBAPP_NAME: "DEV-AppDeploy-Azure-${{ github.event.pull_request.number}}"
+  LOAD_TEST_RESOURCE: "SampleApp"
 
 jobs:
+
   buildImage:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
@@ -42,7 +40,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         push: true
-        tags: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }}
+        tags: ${{ secrets.DOCKER_LOGIN_SERVER }}/maxtest1webapp:${{ github.sha }}
 
     # Scanning Images using Microsoft Defender
     - uses: Azure/container-scan@v0 
@@ -50,150 +48,131 @@ jobs:
       id: container-scan
       continue-on-error: true
       with:
-        image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} 
+        image-name: ${{ secrets.DOCKER_LOGIN_SERVER }}/maxtest1webapp:${{ github.sha }} 
 
     # Sending logs to AppInsights
-    - name: Post logs to appinsights
-      uses: Azure/publish-security-assessments@v0
-      with: 
-        scan-results-path: ${{ steps.container-scan.outputs.scan-report-path }}
-        connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
-        subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }}
+    # - name: Post logs to appinsights
+    #   uses: Azure/publish-security-assessments@v0
+    #   with: 
+    #     scan-results-path: ${{ steps.container-scan.outputs.scan-report-path }}
+    #     connection-string: ${{ secrets.AZ_APPINSIGHTS_CONNECTION_STRING }}
+    #     subscription-token: ${{ secrets.AZ_SUBSCRIPTION_TOKEN }}
 
-  deploy_container:
+  deploy_dev:
 
     runs-on: ubuntu-latest
-    name: Create and Deploy Container to Azure
+    name: Deploy to Dev
     needs: buildImage
 
-    env:
-      url: https://${{ secrets.DEV_WEBAPP_NAME}}.azurewebsites.net
-    
     environment:
       name: Dev
-      url: ${{ env.url }}
+      url: ${{ steps.get-webapp-url.outputs.webAppUrl }}
 
     steps:
     # checkout code
     - name: checkout branch
       uses: actions/checkout@v2
 
-    # log into Azure
-    - name: "Login via Azure CLI"
-      uses: azure/login@v1
+    - name: Deploy app
+      uses: automagicallyorg/action-azure-deploy@main
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    # deploy infrastructure with Azure Bicep
-    - name: Deploy infrastructure
-      id: azure-deployment
-      shell: pwsh
-      run: |
-        $deployment = $(az deployment sub create --name ${{ secrets.DEV_RG_NAME }} `
-          --location ${{ secrets.DEV_LOCATION }} `
-          --template-file ./main.bicep `
-          --parameters location=${{ secrets.DEV_LOCATION }} `
-          --parameters rgName=${{ secrets.DEV_RG_NAME }} `
-          --parameters webAppName=${{ secrets.DEV_WEBAPP_NAME}} `
-          --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
-          --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
-          --parameters dockerImage=appdeployazure:${{ github.sha }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra/bicep
-
-    # Push container image to Azure WebApp
-    - name: Setup Container
-      id: container-set
-      shell: pwsh
-      run: |
-        $deployment = $(az webapp config container set  --resource-group ${{ secrets.DEV_RG_NAME }} `
-          --name ${{ secrets.DEV_WEBAPP_NAME}} `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
-          --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
-          --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra/bicep
-    
+        azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
+        azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
+        azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        azureLocation: ${{ secrets.LOCATION }}
+        azureResourceGroupName: ${{ secrets.RG_NAME }}
+        azureWebappName:  ${{ secrets.WEBAPP_NAME }}
+        dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
+        dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+        dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
  
-  deploy_test:
+  deploy_qa:
         
     runs-on: ubuntu-latest
-    name: Deploy to Test
-    needs: deploy_container
+    name: Deploy to QA
+    needs: deploy_dev
 
     # output URL from deployment
     environment:
-      name: test
+      name: QA
       url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
  
     steps:
     # checkout code
     - name: checkout branch
       uses: actions/checkout@v2
-    
+
+    - name: Deploy app
+      uses: automagicallyorg/action-azure-deploy@main
+      with:
+        azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
+        azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
+        azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        azureLocation: ${{ secrets.LOCATION }}
+        azureResourceGroupName: ${{ secrets.RG_NAME }}
+        azureWebappName:  ${{ secrets.WEBAPP_NAME }}
+        dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
+        dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+        dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
+
+  loadtest_qa:
+        
+    runs-on: ubuntu-latest
+    name: Load test QA
+    needs: deploy_dev
+
+    # output URL from deployment
+    environment:
+      name: QA
+      url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
+ 
+    steps:
+    # checkout code
+    - name: checkout branch
+      uses: actions/checkout@v2
+
     # log into Azure
     - name: "Login via Azure CLI"
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # deploy infrastructure with Azure Bicep
-    - name: Deploy infrastructure
-      id: azure-deployment
-      shell: pwsh
-      run: |
-        $deployment = $(az deployment sub create --name ${{ secrets.TEST_RG_NAME }} `
-          --location ${{ secrets.TEST_LOCATION }} `
-          --template-file ./main.bicep `
-          --parameters location=${{ secrets.TEST_LOCATION }} `
-          --parameters rgName=${{ secrets.TEST_RG_NAME }} `
-          --parameters webAppName=${{ secrets.TEST_WEBAPP_NAME}} `
-          --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
-          --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
-          --parameters dockerImage=${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra/bicep
+    - name: Create Azure Load Testing resource
+      uses: azure/arm-deploy@v1
+      with:
+        resourceGroupName: ${{ secrets.RG_NAME }}
+        template: ./infra/arm/template.json
+        parameters: ./infra/arm/parameters.json name=${{ env.LOAD_TEST_RESOURCE }} location="${{ secrets.LOCATION }}"
 
-    # Push container image to Azure WebApp
-    - name: Setup Container
-      id: container-set
-      shell: pwsh
-      run: |
-        $deployment = $(az webapp config container set  --resource-group ${{ secrets.TEST_RG_NAME }} `
-          --name ${{ secrets.TEST_WEBAPP_NAME}} `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
-          --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
-          --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra/bicep
+    # load test
+    - name: 'Azure Load Testing'
+      uses: azure/load-testing@v1
+      with:
+        loadTestConfigFile: 'SampleApp.yaml'
+        loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
+        resourceGroup: ${{ secrets.RG_NAME }}
+        env: |
+          [
+            {
+            "name": "${{ secrets.WEBAPP_NAME }}",
+            "value": "${{ secrets.WEBAPP_NAME }}.azurewebsites.net"
+            }
+          ]
 
-    # Get the URL for the Azure WebApp
-    - name: Get the Webapp URL
-      id: get-webapp-url
-      shell: pwsh
-      run: |
-        $appurl = $(az webapp config hostname list `
-          --resource-group ${{ secrets.TEST_RG_NAME }} `
-          --webapp-name ${{ secrets.TEST_WEBAPP_NAME }} `
-          --output json) | ConvertFrom-Json
-        Write-Output "The webapp URL is https://$($appurl.name)"
-        Write-Output "::set-output name=webAppUrl::https://$($appurl.name)"
-      working-directory: ./infra/bicep
-
+    - uses: actions/upload-artifact@v2
+      with:
+        name: loadTestResults
+        path: ${{ github.workspace }}/loadTest
 
   deploy_staging:
         
     runs-on: ubuntu-latest
     name: Deploy to Staging
-    needs: deploy_test
+    needs: deploy_qa
 
     # output URL from  deployment
     environment:
-      name: staging
+      name: Staging
       url:  ${{ steps.get-webapp-url.outputs.webAppUrl }}
  
     steps:
@@ -201,58 +180,19 @@ jobs:
     - name: checkout branch
       uses: actions/checkout@v2
     
-    # log into Azure
-    - name: "Login via Azure CLI"
-      uses: azure/login@v1
+    - name: Deploy app
+      uses: automagicallyorg/action-azure-deploy@main
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
+        azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
+        azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        azureLocation: ${{ secrets.LOCATION }}
+        azureResourceGroupName: ${{ secrets.RG_NAME }}
+        azureWebappName:  ${{ secrets.WEBAPP_NAME }}
+        dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
+        dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+        dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
 
-    # deploy infrastructure with Azure Bicep
-    - name: Deploy infrastructure
-      id: azure-deployment
-      shell: pwsh
-      run: |
-        $deployment = $(az deployment sub create --name ${{ secrets.STAGING_RG_NAME }} `
-          --location ${{ secrets.STAGING_LOCATION }} `
-          --template-file ./main.bicep `
-          --parameters location=${{ secrets.STAGING_LOCATION }} `
-          --parameters rgName=${{ secrets.STAGING_RG_NAME }} `
-          --parameters webAppName=${{ secrets.STAGING_WEBAPP_NAME}} `
-          --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
-          --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
-          --parameters dockerImage=${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra/bicep
-
-    # Push container image to Azure WebApp
-    - name: Setup Container
-      id: container-set
-      shell: pwsh
-      run: |
-        $deployment = $(az webapp config container set  --resource-group ${{ secrets.STAGING_RG_NAME }} `
-          --name ${{ secrets.STAGING_WEBAPP_NAME}} `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
-          --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
-          --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra/bicep
-
-    # Get the URL for the Azure WebApp
-    - name: Get the Webapp URL
-      id: get-webapp-url
-      shell: pwsh
-      run: |
-        $appurl = $(az webapp config hostname list `
-          --resource-group ${{ secrets.STAGING_RG_NAME }} `
-          --webapp-name ${{ secrets.STAGING_WEBAPP_NAME }} `
-          --output json) | ConvertFrom-Json
-        Write-Output "The webapp URL is https://$($appurl.name)"
-        Write-Output "::set-output name=webAppUrl::https://$($appurl.name)"
-      working-directory: ./infra/bicep
-
-    
   deploy_production:
         
     runs-on: ubuntu-latest
@@ -268,54 +208,16 @@ jobs:
     # checkout code
     - name: checkout branch
       uses: actions/checkout@v2
-    
-    # log into Azure
-    - name: "Login via Azure CLI"
-      uses: azure/login@v1
+
+    - name: Deploy app
+      uses: automagicallyorg/action-azure-deploy@main
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    # deploy infrastructure with Azure Bicep
-    - name: Deploy infrastructure
-      id: azure-deployment
-      shell: pwsh
-      run: |
-        $deployment = $(az deployment sub create --name ${{ secrets.PROD_RG_NAME }} `
-          --location ${{ secrets.PROD_LOCATION }} `
-          --template-file ./main.bicep `
-          --parameters location=${{ secrets.PROD_LOCATION }} `
-          --parameters rgName=${{ secrets.PROD_RG_NAME }} `
-          --parameters webAppName=${{ secrets.PROD_WEBAPP_NAME}} `
-          --parameters dockerRegistryHost=${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --parameters dockerRegistryServerUsername=${{ secrets.DOCKER_USERNAME }} `
-          --parameters dockerRegistryServerPassword=${{ secrets.DOCKER_PASSWORD }} `
-          --parameters dockerImage=${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra/bicep
-
-    # Push container image to Azure WebApp
-    - name: Setup Container
-      id: container-set
-      shell: pwsh
-      run: |
-        $deployment = $(az webapp config container set  --resource-group ${{ secrets.PROD_RG_NAME }} `
-          --name ${{ secrets.PROD_WEBAPP_NAME}} `
-          --docker-custom-image-name ${{ secrets.DOCKER_LOGIN_SERVER }}/appdeployazure:${{ github.sha }} `
-          --docker-registry-server-url https://${{ secrets.DOCKER_LOGIN_SERVER }} `
-          --docker-registry-server-user ${{ secrets.DOCKER_USERNAME }} `
-          --docker-registry-server-password ${{ secrets.DOCKER_PASSWORD }} `
-          --output json) | ConvertFrom-Json
-      working-directory: ./infra/bicep
-
-    # Get the URL for the Azure WebApp
-    - name: Get the Webapp URL
-      id: get-webapp-url
-      shell: pwsh
-      run: |
-        $appurl = $(az webapp config hostname list `
-          --resource-group ${{ secrets.PROD_RG_NAME }} `
-          --webapp-name ${{ secrets.PROD_WEBAPP_NAME }} `
-          --output json) | ConvertFrom-Json
-        Write-Output "The webapp URL is https://$($appurl.name)"
-        Write-Output "::set-output name=webAppUrl::https://$($appurl.name)"
-      working-directory: ./infra/bicep
+        azuerClientId: ${{ secrets.AZURE_CLIENT_ID }}
+        azureTenantId: ${{ secrets.AZURE_TENANT_ID }}
+        azureSubscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        azureLocation: ${{ secrets.LOCATION }}
+        azureResourceGroupName: ${{ secrets.RG_NAME }}
+        azureWebappName:  ${{ secrets.WEBAPP_NAME }}
+        dockerLoginServer: ${{ secrets.DOCKER_LOGIN_SERVER }}
+        dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+        dockerUserPassword: ${{ secrets.DOCKER_PASSWORD }}
