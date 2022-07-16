@@ -124,6 +124,7 @@
 			
 		// Slider.
 			var $sliders = $('.slider');
+			var secret_token = "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" // DO NOT COMMIT
 			
 			if ($sliders.length > 0) {
 				
