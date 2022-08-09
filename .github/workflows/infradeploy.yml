@@ -7,7 +7,7 @@ on:
 
 env:
   DOTNET_VERSION: '6.0'
-  APP_PACKAGE_PATH: ./src/website.backup/Source/*.sln
+  APP_PACKAGE_PATH: ./website.backup/Source/*.sln
 
 jobs:
   manage-infrastructure:
